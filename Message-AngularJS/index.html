@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta charset="utf-8">
+        <title>留言板</title>
+        <link rel="stylesheet" href="./css/reset.css">
+        <link rel="stylesheet" href="./css/index.css">
+    </head>
+    <body ng-app="message-board" ng-controller="ctrl">
+
+        <div class="container">
+            <header>留言板</header>
+
+            <!-- 输入区域 -->
+            <div class="input-wrapper">
+                <section>
+                    <input id="nickname" ng-model="nickname" type="text" placeholder="请输入昵称">
+                </section>
+                <section>
+                    <div class="content-wrapper">
+                        <p class="textarea-placeholder" ng-show="placeholderFlag">请输入留言内容，不超过300字</p>
+                        <textarea id="content" ng-blur="placeholderFlag = (content.length == 0)" ng-focus="placeholderFlag = false" ng-model="content" rows="5" cols="40"></textarea>
+                        <div class="mark-send">
+                            <span class="mark-count"><span id="current-count" ng-bind="content.length"></span>/300</span>
+                            <span id="send-btn" ng-show="sendFlag" ng-click="send()">发布</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 列表区域 -->
+            <div class="content-list">
+                <header>
+                    <input type="text" ng-model="key" placeholder="输入标签筛选留言，如：用户反馈">
+                </header>
+                <div class="wrapper">
+                    <section ng-repeat="item in data | filter:key track by $index">
+                        <p class="content">{{ item.userName }} : {{ item.content }}</p>
+                        <div class="targets">
+                            <p ng-repeat="t in item.targets track by $index">
+                                {{ t }}
+                                <b class="close" ng-click="close($index)">❌</b>
+                            </p>
+                            <span class="add" ng-click="addTarget($index)">➕</span>
+                        </div>
+                        <span class="delete" ng-click="delete($index)">删</span>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+    </body>
+    <script src="./js/angular.js" charset="utf-8"></script>
+    <script src="./js/dataManager.js" charset="utf-8"></script>
+    <script type="text/javascript">
+
+        var app = angular.module("message-board", []);
+        app.controller("ctrl", function ($scope) {
+
+            $scope.data = getData();
+            console.log($scope);
+            $scope.key = ""; // 过滤使用的
+            $scope.content = ""; // 内容默认为空
+            $scope.placeholderFlag = true; // 输入框遮罩层
+            $scope.sendFlag = true; // 表示发送按钮是否显示
+
+            // 输入框输入的函数
+            $scope.$watch('content', function (oldValue, newValue) {
+                $scope.sendFlag = (newValue.length <= 300);
+            });
+
+            // 发送按钮对应的函数
+            $scope.send = function () {
+                var nickname = $scope.nickname,
+                    content = $scope.content;
+                // 判空操作
+                if (nickname == '' || content == '') {
+                    alert('不能有空内容，请检查');
+                    return;
+                }
+                // 添加数据，unshift到数组中
+                $scope.data.unshift({
+                    id: (new Date().gettime),
+                    userName: nickname,
+                    content: content,
+                    targets: [],
+                    putTime: (new Date().gettime)
+                });
+
+                // 重新保存数据到localStroage
+                saveData($scope.data);
+            };
+
+            // 删除按钮对应的函数
+            $scope.delete = function (i) {
+                // 根据下标，删除元素
+                $scope.data.splice(i, 1);
+
+                // 重新保存数据到localStroage
+                saveData($scope.data);
+            };
+
+            // 标签删除按钮对应的函数
+            $scope.close = function (i) {
+                // 找到父级数据中的targets，再通过splice函数根据下标删除数据
+                this.$parent.item.targets.splice(i, 1);
+
+                // 重新保存数据到localStroage
+                saveData($scope.data);
+            };
+
+            // 添加标签对应的函数
+            $scope.addTarget = function () {
+                // 弹出带有输入框的弹框
+                var res = prompt();
+                // 判断是否有值
+                if ( res != null && res.length != 0) {
+                    // 进行数据的添加
+                    this.item.targets.push(res)
+                }
+
+                // 重新保存数据到localStroage
+                saveData($scope.data);
+            };
+        });
+
+    </script>
+</html>
